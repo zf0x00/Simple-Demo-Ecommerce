@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  // If you want to use Prisma Migrate, you will need to manually create a shadow database
+  // https://neon.tech/docs/guides/prisma-migrate#configure-a-shadow-database-for-prisma-migrate
+  // make sure to append ?connect_timeout=10 to the connection string
+  // shadowDatabaseUrl = env(“SHADOW_DATABASE_URL”)
+}
+
+model Store {
+  id        String      @id @default(uuid())
+  name      String
+  userId    String
+  store     BillBoard[] @relation("StoreToBillboard")
+  category  Category[]  @relation("StoreToCategory")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  size      Size[]      @relation("StoreToSize")
+  colors    Colors[]    @relation("StoreToColor")
+  products  Products[]  @relation("StoreToProduct")
+  order     Order[]
+}
+
+model BillBoard {
+  id        String     @id @default(uuid())
+  storeId   String
+  store     Store      @relation("StoreToBillboard", fields: [storeId], references: [id])
+  label     String
+  imageUrl  String
+  category  Category[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([storeId])
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  storeId     String
+  store       Store      @relation("StoreToCategory", fields: [storeId], references: [id])
+  billboardId String
+  billboard   BillBoard  @relation(fields: [billboardId], references: [id])
+  name        String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  products    Products[] @relation("CategoryToProduct")
+}
+
+model Size {
+  id        String     @id @default(uuid())
+  storeId   String
+  store     Store      @relation("StoreToSize", fields: [storeId], references: [id])
+  name      String
+  value     String
+  createdAt DateTime   @default(now())
+  updateAt  DateTime   @updatedAt
+  products  Products[]
+}
+
+model Colors {
+  id        String     @id @default(uuid())
+  storeId   String
+  store     Store      @relation("StoreToColor", fields: [storeId], references: [id])
+  name      String
+  value     String
+  createdAt DateTime   @default(now())
+  updateAt  DateTime   @updatedAt
+  products  Products[]
+}
+
+model Products {
+  id          String       @id @default(uuid())
+  storeId     String
+  store       Store        @relation("StoreToProduct", fields: [storeId], references: [id])
+  categoryId  String
+  category    Category     @relation("CategoryToProduct", fields: [categoryId], references: [id])
+  name        String
+  description String
+  price       Decimal
+  isFeatured  Boolean      @default(false)
+  isArchived  Boolean      @default(false)
+  sizeId      String
+  size        Size         @relation(fields: [sizeId], references: [id])
+  colorId     String
+  color       Colors       @relation(fields: [colorId], references: [id])
+  images      Image[]
+  orderItems  OrderItems[]
+  createdAt   DateTime     @default(now())
+  updateAt    DateTime     @updatedAt
+}
+
+model Image {
+  id        String   @id @default(uuid())
+  productId String
+  product   Products @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  createdAt DateTime @default(now())
+  updateAt  DateTime @updatedAt
+}
+
+model Order {
+  id          String       @id @default(uuid())
+  storeId     String
+  store       Store        @relation(fields: [storeId], references: [id])
+  name        String
+  phoneNumber String       @default("")
+  address     String       @default("")
+  isPaid      Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updateAt    DateTime     @updatedAt
+  orderItems  OrderItems[]
+}
+
+model OrderItems {
+  id         String    @id @default(uuid())
+  order      Order?    @relation(fields: [orderId], references: [id])
+  orderId    String?
+  products   Products? @relation(fields: [productsId], references: [id])
+  productsId String?
+}
